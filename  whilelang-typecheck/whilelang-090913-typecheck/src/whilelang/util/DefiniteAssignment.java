@@ -196,6 +196,9 @@ public class DefiniteAssignment {
 	
 	public void check(Expr.Binary expr, Set<String> environment) {
 		// TODO: implement me!
+		this.check(expr.getLhs(), environment);
+		this.check(expr.getRhs(), environment);
+		
 	}
 	
 	public void check(Expr.Cast expr, Set<String> environment) {
@@ -204,10 +207,12 @@ public class DefiniteAssignment {
 	
 	public void check(Expr.Constant expr, Set<String> environment) {
 		// Constants are obviousy already defined ;)
+		
 	}
 	
 	public void check(Expr.IndexOf expr, Set<String> environment) {
 		// TODO: implement me!
+		
 	}
 	
 	public void check(Expr.Invoke expr, Set<String> environment) {
@@ -215,15 +220,22 @@ public class DefiniteAssignment {
 	}
 	
 	public void check(Expr.ListConstructor expr, Set<String> environment) {
-		// TODO: implement me!		
+		// TODO: implement me!
+		for(Expr ex:expr.getArguments()){
+			check(ex, environment);
+		}
 	}
 	
 	public void check(Expr.RecordAccess expr, Set<String> environment) {
 		// TODO: implement me!
+		
 	}
 	
 	public void check(Expr.RecordConstructor expr, Set<String> environment) {
 		// TODO: implement me!
+		for(Pair<String, Expr> ex:expr.getFields()){
+			this.check(ex.second(), environment);
+		}
 	}
 	
 	public void check(Expr.Unary expr, Set<String> environment) {
@@ -236,5 +248,6 @@ public class DefiniteAssignment {
 			syntaxError("variable " + expr.getName()
 					+ " is not definitely assigned", file.filename, expr);
 		}
+		
 	}
 }
