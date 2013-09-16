@@ -39,12 +39,12 @@ public class Main {
 	}
 
 	private static enum Mode { interpret, jvm, x86 };
-	
+
 	public static boolean run(String[] args) {
 		boolean verbose = false;
 		int fileArgsBegin = 0;
 		Mode mode = Mode.interpret;
-		
+
 		for (int i = 0; i != args.length; ++i) {
 			if (args[i].startsWith("-")) {
 				String arg = args[i];
@@ -79,11 +79,11 @@ public class Main {
 			Lexer lexer = new Lexer(srcFile.getPath());
 			Parser parser = new Parser(srcFile.getPath(), lexer.scan());
 			WhileFile ast = parser.read();
-			
-			// Second, we'd want to perform some kind of type checking here.			
+
+			// Second, we'd want to perform some kind of type checking here.
 			new DefiniteAssignment().check(ast);
 			new TypeChecker().check(ast);
-			
+
 			// Third, we'd want to run the interpreter or compile the file.
 			switch(mode) {
 			case interpret:
@@ -93,14 +93,15 @@ public class Main {
 				File classFile = new File(filename.substring(0,filename.lastIndexOf('.')) + ".class");
 				System.out.println("Compiling to JVM Bytecode...");
 				ClassFileWriter cfw = new ClassFileWriter(classFile);
-				cfw.write(ast);				
+				cfw.write(ast);
 				break;
 			case x86:
 				System.out.println("Compiling to X86 Assembly Language...");
 				break;
 			}
-			
+
 		} catch (SyntaxError e) {
+			e.printStackTrace();
 			if (e.filename() != null) {
 				e.outputSourceError(System.out);
 			} else {
@@ -129,7 +130,7 @@ public class Main {
 
 	/**
 	 * Print out information regarding command-line arguments
-	 * 
+	 *
 	 */
 	public static void usage() {
 		String[][] info = {
