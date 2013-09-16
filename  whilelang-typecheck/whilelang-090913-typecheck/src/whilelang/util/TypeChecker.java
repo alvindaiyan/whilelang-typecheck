@@ -105,7 +105,6 @@ public class TypeChecker {
 		// TODO: implement me!
 		if(stmt.getLhs() instanceof Expr.Variable){
 			Expr.Variable var = (Expr.Variable) stmt.getLhs();
-
 			environment.put(var.getName(), this.check(var, environment));
 		}
 //		else if(stmt.getLhs() instanceof Expr.IndexOf){
@@ -125,8 +124,10 @@ public class TypeChecker {
 //		Type type = this.check(stmt.getExpr(), environment);
 	}
 
+	boolean returnFlag = false;
 	public void check(Stmt.Return stmt, Map<String, Type> environment) {
 		// TODO: implement me!
+		returnFlag = true;
 		Type type = this.check(stmt.getExpr(), environment);
 //		this.isSubtype(this.function.ret, type, stmt.getExpr());
 //		this.isSubtype(this.function.ret, type, stmt.getExpr());
@@ -134,7 +135,7 @@ public class TypeChecker {
 			syntaxError("expected type " + this.function.ret + ", found " + type,
 					file.filename, stmt.getExpr());
 		}
-
+		returnFlag = false;
 	}
 
 
@@ -242,7 +243,12 @@ public class TypeChecker {
 			if(leftType instanceof Type.Strung) {
 
 			} else if (leftType instanceof Type.List){
-
+				if(!equivalent(leftType, rightType, expr)){
+					List<Type> bounds = new ArrayList<Type>();
+					bounds.add(leftType);
+					bounds.add(rightType);
+					return new Type.Union(bounds, null);
+				}
 			} else if (!equivalent(leftType, rightType, expr)) {
 				syntaxError("operands must have identical types, found " + leftType
 						+ " and " + rightType, file.filename, expr);
