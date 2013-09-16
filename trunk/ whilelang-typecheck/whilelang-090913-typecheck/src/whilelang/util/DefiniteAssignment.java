@@ -14,15 +14,15 @@ import whilelang.lang.WhileFile;
  * The algorithm for checking this involves a depth-first search through the
  * control-flow graph of the method. Throughout this, a list of the defined
  * variables is maintained.
- * 
+ *
  * @author David J. Pearce
- * 
+ *
  */
 public class DefiniteAssignment {
 	private WhileFile file;
 	private WhileFile.FunDecl function;
 	private HashSet<String> constants;
-	
+
 	public void check(WhileFile wf) {
 		this.file = wf;
 		this.constants = new HashSet<String>();
@@ -32,33 +32,33 @@ public class DefiniteAssignment {
 				this.constants.add(cd.name());
 			}
 		}
-		
+
 		for(WhileFile.Decl declaration : wf.declarations) {
 			if(declaration instanceof WhileFile.FunDecl) {
 				check((WhileFile.FunDecl) declaration);
 			}
 		}
 	}
-	
+
 	public void check(WhileFile.FunDecl fd) {
 		this.function = fd;
-		
+
 		// First, initialise the environment with all parameters (since these
 		// are assumed to be definitely assigned)
 		HashSet<String> environment = new HashSet<String>(constants);
 		for (WhileFile.Parameter p : fd.parameters) {
 			environment.add(p.name());
 		}
-		
+
 		// Second, check all statements in the function body
-		check(fd.statements,environment);				
+		check(fd.statements,environment);
 	}
-	
+
 	/**
 	 * Check that all variables used in a given list of statements are definitely
 	 * assigned. Furthermore, update the set of definitely assigned variables to
 	 * include any which are definitely assigned at the end of these statements.
-	 * 
+	 *
 	 * @param statements
 	 *            The list of statements to check.
 	 * @param environment
@@ -69,18 +69,18 @@ public class DefiniteAssignment {
 			check(s,environment);
 		}
 	}
-	
+
 	/**
 	 * Check that all variables used in a given statement are definitely
 	 * assigned. Furthermore, update the set of definitely assigned variables to
 	 * include any which are definitely assigned after this statement.
-	 * 
+	 *
 	 * @param statement
 	 *            The statement to check.
 	 * @param environment
 	 *            The set of variables which are definitely assigned.
 	 */
-	public void check(Stmt stmt, Set<String> environment) {			
+	public void check(Stmt stmt, Set<String> environment) {
 		if(stmt instanceof Stmt.Assign) {
 			check((Stmt.Assign) stmt, environment);
 		} else if(stmt instanceof Stmt.Print) {
@@ -101,7 +101,7 @@ public class DefiniteAssignment {
 			internalFailure("unknown statement encountered (" + stmt + ")", file.filename,stmt);
 		}
 	}
-	
+
 	public void check(Stmt.Assign stmt, Set<String> environment) {
 		if(stmt.getLhs() instanceof Expr.Variable) {
 			Expr.Variable var = (Expr.Variable) stmt.getLhs();
@@ -109,18 +109,21 @@ public class DefiniteAssignment {
 		} else {
 			check(stmt.getLhs(), environment);
 		}
-		
+
 		check(stmt.getRhs(), environment);
 	}
-	
+
 	public void check(Stmt.Print stmt, Set<String> environment) {
 		check(stmt.getExpr(),environment);
 	}
-	
+
+	boolean flag = false;
+
 	public void check(Stmt.Return stmt, Set<String> environment) {
 		check(stmt.getExpr(), environment);
+		flag = true;
 	}
-	
+
 	public void check(Stmt.VariableDeclaration stmt, Set<String> environment) {
 		if(environment.contains(stmt.getName())) {
 			syntaxError("variable already declared: " + stmt.getName(),
@@ -128,46 +131,68 @@ public class DefiniteAssignment {
 		} else if(stmt.getExpr() != null) {
 			check(stmt.getExpr(),environment);
 			environment.add(stmt.getName());
-		}		
+		}
 	}
-	
+
 	public void check(Stmt.IfElse stmt, Set<String> environment) {
 		check(stmt.getCondition(),environment);
 		HashSet<String> trueEnv = new HashSet<String>(environment);
 		HashSet<String> falseEnv = new HashSet<String>(environment);
 		check(stmt.getTrueBranch(), trueEnv);
+		boolean trueReturn = flag;
+		flag = false;
+
 		check(stmt.getFalseBranch(), falseEnv);
-		
+		boolean falseReturn = flag;
+		flag = false;
+
+		System.err.println("falseEnv: " + falseEnv);
+		System.err.println("environment: " + environment);
 		// add all items defined on both branches to environment
 		for(String var : trueEnv) {
 			if(falseEnv.contains(var)) {
 				environment.add(var);
 			}
 		}
+		// TODO: not using the flag as the hint suggest
+
+		for (String var : falseEnv) {
+			if (trueReturn && !environment.contains(var)) {
+				environment.add(var);
+			}
+		}
+		for (String var : trueEnv) {
+			if (falseReturn && !environment.contains(var)) {
+				environment.add(var);
+			}
+		}
+
+
 	}
-	
+
 	public void check(Stmt.For stmt, Set<String> environment) {
 		check(stmt.getDeclaration(),environment);
 		check(stmt.getCondition(),environment);
 		check(stmt.getIncrement(),environment);
 		check(stmt.getBody(), new HashSet<String>(environment));
 	}
-	
+
 	public void check(Stmt.While stmt, Set<String> environment) {
 		check(stmt.getCondition(),environment);
 		check(stmt.getBody(), new HashSet<String>(environment));
 	}
-	
+
 	/**
 	 * Check that all variables used in a given expression are definitely
 	 * assigned.
-	 * 
+	 *
 	 * @param expr
 	 *            The expression to check.
 	 * @param environment
 	 *            The set of variables which are definitely assigned.
 	 */
 	public void check(Expr expr, Set<String> environment) {
+		System.err.println(expr.getClass());	// TODO: testing used
 		if (expr instanceof Expr.Binary) {
 			check((Expr.Binary) expr, environment);
 		} else if (expr instanceof Expr.Cast) {
@@ -193,61 +218,68 @@ public class DefiniteAssignment {
 					file.filename, expr);
 		}
 	}
-	
+
 	public void check(Expr.Binary expr, Set<String> environment) {
 		// TODO: implement me!
 		this.check(expr.getLhs(), environment);
 		this.check(expr.getRhs(), environment);
-		
+
 	}
-	
+
 	public void check(Expr.Cast expr, Set<String> environment) {
 		// TODO: implement me!
+		this.check(expr.getSource(), environment);
 	}
-	
+
 	public void check(Expr.Constant expr, Set<String> environment) {
 		// Constants are obviousy already defined ;)
-		
 	}
-	
+
 	public void check(Expr.IndexOf expr, Set<String> environment) {
 		// TODO: implement me!
-		
+		this.check(expr.getSource(), environment);
+		this.check(expr.getIndex(), environment);
 	}
-	
+
 	public void check(Expr.Invoke expr, Set<String> environment) {
 		// TODO: implement me!
+		for(Expr ex:expr.getArguments()){
+			this.check(ex, environment);
+		}
 	}
-	
+
 	public void check(Expr.ListConstructor expr, Set<String> environment) {
 		// TODO: implement me!
 		for(Expr ex:expr.getArguments()){
 			check(ex, environment);
 		}
 	}
-	
+
 	public void check(Expr.RecordAccess expr, Set<String> environment) {
 		// TODO: implement me!
-		
+		this.check(expr.getSource(), environment);
+
 	}
-	
+
 	public void check(Expr.RecordConstructor expr, Set<String> environment) {
 		// TODO: implement me!
 		for(Pair<String, Expr> ex:expr.getFields()){
 			this.check(ex.second(), environment);
 		}
 	}
-	
+
 	public void check(Expr.Unary expr, Set<String> environment) {
 		// TODO: implement me!
+		this.check(expr.getExpr(), environment);
 	}
-	
+
+
 	public void check(Expr.Variable expr, Set<String> environment) {
 		if (!environment.contains(expr.getName())) {
 			// This variable is not definitely assigned.
 			syntaxError("variable " + expr.getName()
 					+ " is not definitely assigned", file.filename, expr);
 		}
-		
+
 	}
 }
