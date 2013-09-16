@@ -192,7 +192,7 @@ public class DefiniteAssignment {
 	 *            The set of variables which are definitely assigned.
 	 */
 	public void check(Expr expr, Set<String> environment) {
-		System.err.println(expr.getClass());	// TODO: testing used
+//		System.err.println(expr.getClass());	// TODO: testing used
 		if (expr instanceof Expr.Binary) {
 			check((Expr.Binary) expr, environment);
 		} else if (expr instanceof Expr.Cast) {
