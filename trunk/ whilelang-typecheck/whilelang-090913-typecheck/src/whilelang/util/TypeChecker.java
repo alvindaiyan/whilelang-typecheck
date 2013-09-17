@@ -489,6 +489,8 @@ public class TypeChecker {
 	 *            Used for determining where to report syntax errors.
 	 */
 	public boolean isSubtype(Type t1, Type t2, SyntacticElement element) {
+
+		System.err.println("==========> " + t1 + ", " + t2);
 		if (t2 instanceof Type.Void) {
 			// OK
 		} else if (t1 instanceof Type.Null && t2 instanceof Type.Null) {
@@ -542,6 +544,19 @@ public class TypeChecker {
 				syntaxError("unknown type encountered: " + t2, file.filename,
 						element);
 			}
+		} else if(t1 instanceof Type.Union && t2 instanceof Type.Union){
+			List<Type> l1 = ((Type.Union) t1).getBounds();
+			List<Type> l2 = ((Type.Union) t2).getBounds();
+			if(l1.size() != l2.size()){return false;}
+			for(Type u1:l1){
+				boolean rel = false;
+				for(Type u2:l2){
+					if(isSubtype(u1, u2, element)){
+						rel = true;
+					}
+				}
+				if(!rel){return false;}
+			}
 		} else if (t1 instanceof Type.Union) {
 			Type.Union u1 = (Type.Union) t1;
 			for(Type b1 : u1.getBounds()) {
@@ -554,7 +569,7 @@ public class TypeChecker {
 			Type.Union u2 = (Type.Union) t2;
 			for(Type b2 : u2.getBounds()) {
 				if(!isSubtype(t1,b2,element)) {
-					return false;
+					return false;	//TODO fixed?
 				}
 			}
 		} else {
