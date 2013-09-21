@@ -101,7 +101,6 @@ public class Main {
 			}
 
 		} catch (SyntaxError e) {
-			e.printStackTrace();
 			if (e.filename() != null) {
 				e.outputSourceError(System.out);
 			} else {
