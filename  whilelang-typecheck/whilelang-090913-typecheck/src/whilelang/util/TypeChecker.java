@@ -489,8 +489,6 @@ public class TypeChecker {
 	 *            Used for determining where to report syntax errors.
 	 */
 	public boolean isSubtype(Type t1, Type t2, SyntacticElement element) {
-
-		System.err.println("==========> " + t1 + ", " + t2);
 		if (t2 instanceof Type.Void) {
 			// OK
 		} else if (t1 instanceof Type.Null && t2 instanceof Type.Null) {
@@ -519,7 +517,14 @@ public class TypeChecker {
 			Map<String,Type> l2Fields = l2.getFields();
 			if(l1Fields.keySet().equals(l2Fields.keySet())) {
 				for(Map.Entry<String,Type> p : l1Fields.entrySet()) {
-					if(!isSubtype(p.getValue(),l2Fields.get(p.getKey()),element)) {
+					if(l2Fields.get(p.getKey()) instanceof Type.Union){
+						Type.Union l2u = (Type.Union) l2Fields.get(p.getKey());
+						for(Type tp:l2u.getBounds()){
+							if(isSubtype(p.getValue(), tp, element)){
+								return true;
+							}
+						}
+					} else	if(!isSubtype(p.getValue(),l2Fields.get(p.getKey()),element)) {
 						return false;
 					}
 				}
